@@ -2,8 +2,6 @@ require 'i18n'
 require 'i18n/globals/version'
 
 module I18n
-  FAKE_INTERPOLATION_HASH = { fake_: :_interpolation }.freeze
-
   class Config
     class CachedGlobals < Hash
       def []=(key, val)
@@ -106,13 +104,14 @@ module I18n
   end
 
   class << self
-    def translate(*args)
-      # If last argument is a hash, interpolation will be run. If not, it will
+    def translate(*args, **kwargs, &block)
+      # If kwargs has any defined values, interpolation will be run. If not, it will
       # not even attempt to interpolate something and our custom
       # `missing_interpolation_argument_handler` will not be run at all. That's
-      # why we pass in a fake hash so that it always runs interpolation.
-      args << FAKE_INTERPOLATION_HASH unless args.last.is_a?(Hash)
-      super(*args)
+      # why we set a fake interpolation value so that it always runs interpolation.
+      values = kwargs.except(*I18n::RESERVED_KEYS)
+      kwargs[:fake_] = :_interpolation if values.empty?
+      super(*args, **kwargs, &block)
     end
 
     alias t translate
